@@ -69,7 +69,6 @@ callBingoNumbers sequence boards turnNumber =
                     Debug.log "Mark number: " <| x
 
                 updatedBoards =
-                    --    Debug.log "updatedBoards" <|
                     markNumber x boards
                         |> List.map
                             (\board ->
@@ -86,34 +85,12 @@ callBingoNumbers sequence boards turnNumber =
                 winningBoards =
                     updatedBoards
                         |> List.filter (\b -> b.completedAt /= 0)
-
-                --checkForWinners updatedBoards
-                --    |> List.map
-                --        (\board ->
-                --            { board
-                --                | completedAt =
-                --                    if board.completedAt == 0 then
-                --                        x
-                --                    else
-                --                        board.completedAt
-                --            }
-                --        )
             in
             if List.length winningBoards == List.length boards then
                 winningBoards
 
             else
                 callBingoNumbers xs updatedBoards (turnNumber + 1)
-
-
-
---case winningBoards of
---    [] ->
---        -- No winners, so keep calling numbers
---        callBingoNumbers xs updatedBoards
---    bs ->
---        -- Return our winners
---        bs
 
 
 split : Int -> List a -> List (List a)
@@ -135,7 +112,6 @@ boardHasWinningRows : Board -> Bool
 boardHasWinningRows board =
     let
         rows =
-            --Debug.log "rows" <|
             split boardSize board.numbers
 
         hasCompletedRows =
@@ -218,10 +194,6 @@ parseDrawSequence rawInput =
         |> List.map (String.toInt >> Maybe.withDefault 0)
 
 
-
---|> List.take 2
-
-
 main =
     let
         drawSequence : List Int
@@ -231,7 +203,6 @@ main =
 
         boards : List Board
         boards =
-            --Debug.log "boards" <|
             input
                 |> String.split "\n\n"
                 |> List.tail
@@ -275,23 +246,6 @@ main =
                         0
                 )
 
-        --boardScores =
-        --    Debug.log "Scores" <|
-        --        (winningBoards
-        --            |> List.map
-        --                (\board ->
-        --                    board
-        --                        |> List.foldl
-        --                            (\num acc ->
-        --                                case num of
-        --                                    Unmarked x ->
-        --                                        acc + x
-        --                                    _ ->
-        --                                        acc
-        --                            )
-        --                            0
-        --                )
-        --        )
         totalWinningBoards =
             Debug.log "Total winners" <| List.length winningBoards
     in

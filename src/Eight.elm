@@ -42,54 +42,6 @@ getNumberForSegmentLength length =
             Nothing
 
 
-
---type Position
---    = Top
---    | TopLeft
---    | TopRight
---    | Middle
---    | BottomLeft
---    | BottomRight
---    | Bottom
---
---
---getPositionsForNumber : Int -> List Position
---getPositionsForNumber number =
---    case number of
---        0 ->
---            [ Top, TopLeft, TopRight, BottomLeft, BottomRight, Bottom ]
---
---        1 ->
---            [ TopRight, BottomRight ]
---
---        2 ->
---            [ Top, TopRight, Middle, BottomLeft, Bottom ]
---
---        3 ->
---            [ Top, TopRight, Middle, BottomRight, Bottom ]
---
---        4 ->
---            [ TopLeft, TopRight, Middle, BottomRight ]
---
---        5 ->
---            [ Top, TopLeft, Middle, BottomRight, Bottom ]
---
---        6 ->
---            [ Top, TopLeft, Middle, BottomLeft, BottomRight, Bottom ]
---
---        7 ->
---            [ Top, TopRight, BottomRight ]
---
---        8 ->
---            [ Top, TopLeft, TopRight, Middle, BottomLeft, BottomRight, Bottom ]
---
---        9 ->
---            [ Top, TopLeft, TopRight, Middle, BottomRight, Bottom ]
---
---        _ ->
---            []
-
-
 parseEntry : String -> Maybe Entry
 parseEntry rawEntry =
     rawEntry

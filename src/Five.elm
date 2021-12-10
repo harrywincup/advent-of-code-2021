@@ -45,7 +45,6 @@ createPoint rawPoint =
 
 createLine : String -> Line
 createLine rawLineString =
-    --Debug.log "createLine" <|
     rawLineString
         |> String.split "->"
         |> List.map String.trim
@@ -58,14 +57,6 @@ createLine rawLineString =
                     _ ->
                         Line (Point -1 -1) (Point -1 -1)
            )
-
-
-
---case rawPoints of
---    [ a, b ] ->
---        Just (Line (createPoint a) (createPoint b))
---    _ ->
---        Nothing
 
 
 lineIsHorizontal : Line -> Bool
@@ -169,18 +160,15 @@ calculateAllPointsOnLine line =
 main =
     let
         lines =
-            --Debug.log "lines" <|
             input
                 |> String.split "\n"
                 |> List.map createLine
 
         points =
-            --Debug.log "points" <|
             lines
                 |> List.concatMap calculateAllPointsOnLine
 
         allPoints =
-            --Debug.log "Formatted points" <|
             points
                 |> List.map (\p -> [ p.x, p.y ])
 

@@ -4,6 +4,64 @@ import Debug
 import Html exposing (text)
 
 
+countIncreases : Int -> List Int -> Int
+countIncreases count items =
+    case items of
+        [] ->
+            count
+
+        [ _ ] ->
+            count
+
+        [ a, b ] ->
+            if b > a then
+                count + 1
+
+            else
+                count
+
+        a :: b :: xs ->
+            let
+                n =
+                    if b > a then
+                        count + 1
+
+                    else
+                        count
+            in
+            countIncreases n (b :: xs)
+
+
+groupItems : List Int -> List Int
+groupItems items =
+    case items of
+        [] ->
+            [ 0 ]
+
+        [ a ] ->
+            [ 0 ]
+
+        [ _, _ ] ->
+            [ 0 ]
+
+        [ a, b, c ] ->
+            [ a + b + c ]
+
+        a :: b :: c :: xs ->
+            (a + b + c) :: groupItems (b :: c :: xs)
+
+
+main =
+    let
+        groupedReport =
+            Debug.log "Grouped" (groupItems report)
+    in
+    [ countIncreases 0 report, countIncreases 0 groupedReport ]
+        |> List.map String.fromInt
+        |> String.join " :: "
+        |> text
+
+
 report =
     [ 100
     , 125
@@ -2006,61 +2064,3 @@ report =
     , 10041
     , 10044
     ]
-
-
-countIncreases : Int -> List Int -> Int
-countIncreases count items =
-    case items of
-        [] ->
-            count
-
-        [ _ ] ->
-            count
-
-        [ a, b ] ->
-            if b > a then
-                count + 1
-
-            else
-                count
-
-        a :: b :: xs ->
-            let
-                n =
-                    if b > a then
-                        count + 1
-
-                    else
-                        count
-            in
-            countIncreases n (b :: xs)
-
-
-groupItems : List Int -> List Int
-groupItems items =
-    case items of
-        [] ->
-            [ 0 ]
-
-        [ a ] ->
-            [ 0 ]
-
-        [ _, _ ] ->
-            [ 0 ]
-
-        [ a, b, c ] ->
-            [ a + b + c ]
-
-        a :: b :: c :: xs ->
-            (a + b + c) :: groupItems (b :: c :: xs)
-
-
-main =
-    let
-        groupedReport =
-            Debug.log "Grouped" (groupItems report)
-    in
-    [ countIncreases 0 report, countIncreases 0 groupedReport ]
-        |> List.map String.fromInt
-        |> String.join " :: "
-        |> text
