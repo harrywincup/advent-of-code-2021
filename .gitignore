@@ -1,0 +1,13 @@
+# Vim
+*.sw*
+*~
+
+# Elm
+elm-stuff
+repl-temp-*
+
+# OS
+.DS_Store
+
+# NPM
+.npm
