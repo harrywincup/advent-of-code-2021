@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Twelve</title>
+  <title>Thirteen</title>
   <style>body { padding: 0; margin: 0; }</style>
 </head>
 
@@ -92,6 +92,271 @@ function A9(fun, a, b, c, d, e, f, g, h, i) {
 }
 
 console.warn('Compiled in DEV mode. Follow the advice at https://elm-lang.org/0.19.1/optimize for better performance and smaller assets.');
+
+
+// EQUALITY
+
+function _Utils_eq(x, y)
+{
+	for (
+		var pair, stack = [], isEqual = _Utils_eqHelp(x, y, 0, stack);
+		isEqual && (pair = stack.pop());
+		isEqual = _Utils_eqHelp(pair.a, pair.b, 0, stack)
+		)
+	{}
+
+	return isEqual;
+}
+
+function _Utils_eqHelp(x, y, depth, stack)
+{
+	if (x === y)
+	{
+		return true;
+	}
+
+	if (typeof x !== 'object' || x === null || y === null)
+	{
+		typeof x === 'function' && _Debug_crash(5);
+		return false;
+	}
+
+	if (depth > 100)
+	{
+		stack.push(_Utils_Tuple2(x,y));
+		return true;
+	}
+
+	/**/
+	if (x.$ === 'Set_elm_builtin')
+	{
+		x = $elm$core$Set$toList(x);
+		y = $elm$core$Set$toList(y);
+	}
+	if (x.$ === 'RBNode_elm_builtin' || x.$ === 'RBEmpty_elm_builtin')
+	{
+		x = $elm$core$Dict$toList(x);
+		y = $elm$core$Dict$toList(y);
+	}
+	//*/
+
+	/**_UNUSED/
+	if (x.$ < 0)
+	{
+		x = $elm$core$Dict$toList(x);
+		y = $elm$core$Dict$toList(y);
+	}
+	//*/
+
+	for (var key in x)
+	{
+		if (!_Utils_eqHelp(x[key], y[key], depth + 1, stack))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+var _Utils_equal = F2(_Utils_eq);
+var _Utils_notEqual = F2(function(a, b) { return !_Utils_eq(a,b); });
+
+
+
+// COMPARISONS
+
+// Code in Generate/JavaScript.hs, Basics.js, and List.js depends on
+// the particular integer values assigned to LT, EQ, and GT.
+
+function _Utils_cmp(x, y, ord)
+{
+	if (typeof x !== 'object')
+	{
+		return x === y ? /*EQ*/ 0 : x < y ? /*LT*/ -1 : /*GT*/ 1;
+	}
+
+	/**/
+	if (x instanceof String)
+	{
+		var a = x.valueOf();
+		var b = y.valueOf();
+		return a === b ? 0 : a < b ? -1 : 1;
+	}
+	//*/
+
+	/**_UNUSED/
+	if (typeof x.$ === 'undefined')
+	//*/
+	/**/
+	if (x.$[0] === '#')
+	//*/
+	{
+		return (ord = _Utils_cmp(x.a, y.a))
+			? ord
+			: (ord = _Utils_cmp(x.b, y.b))
+				? ord
+				: _Utils_cmp(x.c, y.c);
+	}
+
+	// traverse conses until end of a list or a mismatch
+	for (; x.b && y.b && !(ord = _Utils_cmp(x.a, y.a)); x = x.b, y = y.b) {} // WHILE_CONSES
+	return ord || (x.b ? /*GT*/ 1 : y.b ? /*LT*/ -1 : /*EQ*/ 0);
+}
+
+var _Utils_lt = F2(function(a, b) { return _Utils_cmp(a, b) < 0; });
+var _Utils_le = F2(function(a, b) { return _Utils_cmp(a, b) < 1; });
+var _Utils_gt = F2(function(a, b) { return _Utils_cmp(a, b) > 0; });
+var _Utils_ge = F2(function(a, b) { return _Utils_cmp(a, b) >= 0; });
+
+var _Utils_compare = F2(function(x, y)
+{
+	var n = _Utils_cmp(x, y);
+	return n < 0 ? $elm$core$Basics$LT : n ? $elm$core$Basics$GT : $elm$core$Basics$EQ;
+});
+
+
+// COMMON VALUES
+
+var _Utils_Tuple0_UNUSED = 0;
+var _Utils_Tuple0 = { $: '#0' };
+
+function _Utils_Tuple2_UNUSED(a, b) { return { a: a, b: b }; }
+function _Utils_Tuple2(a, b) { return { $: '#2', a: a, b: b }; }
+
+function _Utils_Tuple3_UNUSED(a, b, c) { return { a: a, b: b, c: c }; }
+function _Utils_Tuple3(a, b, c) { return { $: '#3', a: a, b: b, c: c }; }
+
+function _Utils_chr_UNUSED(c) { return c; }
+function _Utils_chr(c) { return new String(c); }
+
+
+// RECORDS
+
+function _Utils_update(oldRecord, updatedFields)
+{
+	var newRecord = {};
+
+	for (var key in oldRecord)
+	{
+		newRecord[key] = oldRecord[key];
+	}
+
+	for (var key in updatedFields)
+	{
+		newRecord[key] = updatedFields[key];
+	}
+
+	return newRecord;
+}
+
+
+// APPEND
+
+var _Utils_append = F2(_Utils_ap);
+
+function _Utils_ap(xs, ys)
+{
+	// append Strings
+	if (typeof xs === 'string')
+	{
+		return xs + ys;
+	}
+
+	// append Lists
+	if (!xs.b)
+	{
+		return ys;
+	}
+	var root = _List_Cons(xs.a, ys);
+	xs = xs.b
+	for (var curr = root; xs.b; xs = xs.b) // WHILE_CONS
+	{
+		curr = curr.b = _List_Cons(xs.a, ys);
+	}
+	return root;
+}
+
+
+
+var _List_Nil_UNUSED = { $: 0 };
+var _List_Nil = { $: '[]' };
+
+function _List_Cons_UNUSED(hd, tl) { return { $: 1, a: hd, b: tl }; }
+function _List_Cons(hd, tl) { return { $: '::', a: hd, b: tl }; }
+
+
+var _List_cons = F2(_List_Cons);
+
+function _List_fromArray(arr)
+{
+	var out = _List_Nil;
+	for (var i = arr.length; i--; )
+	{
+		out = _List_Cons(arr[i], out);
+	}
+	return out;
+}
+
+function _List_toArray(xs)
+{
+	for (var out = []; xs.b; xs = xs.b) // WHILE_CONS
+	{
+		out.push(xs.a);
+	}
+	return out;
+}
+
+var _List_map2 = F3(function(f, xs, ys)
+{
+	for (var arr = []; xs.b && ys.b; xs = xs.b, ys = ys.b) // WHILE_CONSES
+	{
+		arr.push(A2(f, xs.a, ys.a));
+	}
+	return _List_fromArray(arr);
+});
+
+var _List_map3 = F4(function(f, xs, ys, zs)
+{
+	for (var arr = []; xs.b && ys.b && zs.b; xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
+	{
+		arr.push(A3(f, xs.a, ys.a, zs.a));
+	}
+	return _List_fromArray(arr);
+});
+
+var _List_map4 = F5(function(f, ws, xs, ys, zs)
+{
+	for (var arr = []; ws.b && xs.b && ys.b && zs.b; ws = ws.b, xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
+	{
+		arr.push(A4(f, ws.a, xs.a, ys.a, zs.a));
+	}
+	return _List_fromArray(arr);
+});
+
+var _List_map5 = F6(function(f, vs, ws, xs, ys, zs)
+{
+	for (var arr = []; vs.b && ws.b && xs.b && ys.b && zs.b; vs = vs.b, ws = ws.b, xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
+	{
+		arr.push(A5(f, vs.a, ws.a, xs.a, ys.a, zs.a));
+	}
+	return _List_fromArray(arr);
+});
+
+var _List_sortBy = F2(function(f, xs)
+{
+	return _List_fromArray(_List_toArray(xs).sort(function(a, b) {
+		return _Utils_cmp(f(a), f(b));
+	}));
+});
+
+var _List_sortWith = F2(function(f, xs)
+{
+	return _List_fromArray(_List_toArray(xs).sort(function(a, b) {
+		var ord = A2(f, a, b);
+		return ord === $elm$core$Basics$EQ ? 0 : ord === $elm$core$Basics$LT ? -1 : 1;
+	}));
+});
+
 
 
 var _JsArray_empty = [];
@@ -539,271 +804,6 @@ function _Debug_regionToString(region)
 	}
 	return 'on lines ' + region.start.line + ' through ' + region.end.line;
 }
-
-
-
-// EQUALITY
-
-function _Utils_eq(x, y)
-{
-	for (
-		var pair, stack = [], isEqual = _Utils_eqHelp(x, y, 0, stack);
-		isEqual && (pair = stack.pop());
-		isEqual = _Utils_eqHelp(pair.a, pair.b, 0, stack)
-		)
-	{}
-
-	return isEqual;
-}
-
-function _Utils_eqHelp(x, y, depth, stack)
-{
-	if (x === y)
-	{
-		return true;
-	}
-
-	if (typeof x !== 'object' || x === null || y === null)
-	{
-		typeof x === 'function' && _Debug_crash(5);
-		return false;
-	}
-
-	if (depth > 100)
-	{
-		stack.push(_Utils_Tuple2(x,y));
-		return true;
-	}
-
-	/**/
-	if (x.$ === 'Set_elm_builtin')
-	{
-		x = $elm$core$Set$toList(x);
-		y = $elm$core$Set$toList(y);
-	}
-	if (x.$ === 'RBNode_elm_builtin' || x.$ === 'RBEmpty_elm_builtin')
-	{
-		x = $elm$core$Dict$toList(x);
-		y = $elm$core$Dict$toList(y);
-	}
-	//*/
-
-	/**_UNUSED/
-	if (x.$ < 0)
-	{
-		x = $elm$core$Dict$toList(x);
-		y = $elm$core$Dict$toList(y);
-	}
-	//*/
-
-	for (var key in x)
-	{
-		if (!_Utils_eqHelp(x[key], y[key], depth + 1, stack))
-		{
-			return false;
-		}
-	}
-	return true;
-}
-
-var _Utils_equal = F2(_Utils_eq);
-var _Utils_notEqual = F2(function(a, b) { return !_Utils_eq(a,b); });
-
-
-
-// COMPARISONS
-
-// Code in Generate/JavaScript.hs, Basics.js, and List.js depends on
-// the particular integer values assigned to LT, EQ, and GT.
-
-function _Utils_cmp(x, y, ord)
-{
-	if (typeof x !== 'object')
-	{
-		return x === y ? /*EQ*/ 0 : x < y ? /*LT*/ -1 : /*GT*/ 1;
-	}
-
-	/**/
-	if (x instanceof String)
-	{
-		var a = x.valueOf();
-		var b = y.valueOf();
-		return a === b ? 0 : a < b ? -1 : 1;
-	}
-	//*/
-
-	/**_UNUSED/
-	if (typeof x.$ === 'undefined')
-	//*/
-	/**/
-	if (x.$[0] === '#')
-	//*/
-	{
-		return (ord = _Utils_cmp(x.a, y.a))
-			? ord
-			: (ord = _Utils_cmp(x.b, y.b))
-				? ord
-				: _Utils_cmp(x.c, y.c);
-	}
-
-	// traverse conses until end of a list or a mismatch
-	for (; x.b && y.b && !(ord = _Utils_cmp(x.a, y.a)); x = x.b, y = y.b) {} // WHILE_CONSES
-	return ord || (x.b ? /*GT*/ 1 : y.b ? /*LT*/ -1 : /*EQ*/ 0);
-}
-
-var _Utils_lt = F2(function(a, b) { return _Utils_cmp(a, b) < 0; });
-var _Utils_le = F2(function(a, b) { return _Utils_cmp(a, b) < 1; });
-var _Utils_gt = F2(function(a, b) { return _Utils_cmp(a, b) > 0; });
-var _Utils_ge = F2(function(a, b) { return _Utils_cmp(a, b) >= 0; });
-
-var _Utils_compare = F2(function(x, y)
-{
-	var n = _Utils_cmp(x, y);
-	return n < 0 ? $elm$core$Basics$LT : n ? $elm$core$Basics$GT : $elm$core$Basics$EQ;
-});
-
-
-// COMMON VALUES
-
-var _Utils_Tuple0_UNUSED = 0;
-var _Utils_Tuple0 = { $: '#0' };
-
-function _Utils_Tuple2_UNUSED(a, b) { return { a: a, b: b }; }
-function _Utils_Tuple2(a, b) { return { $: '#2', a: a, b: b }; }
-
-function _Utils_Tuple3_UNUSED(a, b, c) { return { a: a, b: b, c: c }; }
-function _Utils_Tuple3(a, b, c) { return { $: '#3', a: a, b: b, c: c }; }
-
-function _Utils_chr_UNUSED(c) { return c; }
-function _Utils_chr(c) { return new String(c); }
-
-
-// RECORDS
-
-function _Utils_update(oldRecord, updatedFields)
-{
-	var newRecord = {};
-
-	for (var key in oldRecord)
-	{
-		newRecord[key] = oldRecord[key];
-	}
-
-	for (var key in updatedFields)
-	{
-		newRecord[key] = updatedFields[key];
-	}
-
-	return newRecord;
-}
-
-
-// APPEND
-
-var _Utils_append = F2(_Utils_ap);
-
-function _Utils_ap(xs, ys)
-{
-	// append Strings
-	if (typeof xs === 'string')
-	{
-		return xs + ys;
-	}
-
-	// append Lists
-	if (!xs.b)
-	{
-		return ys;
-	}
-	var root = _List_Cons(xs.a, ys);
-	xs = xs.b
-	for (var curr = root; xs.b; xs = xs.b) // WHILE_CONS
-	{
-		curr = curr.b = _List_Cons(xs.a, ys);
-	}
-	return root;
-}
-
-
-
-var _List_Nil_UNUSED = { $: 0 };
-var _List_Nil = { $: '[]' };
-
-function _List_Cons_UNUSED(hd, tl) { return { $: 1, a: hd, b: tl }; }
-function _List_Cons(hd, tl) { return { $: '::', a: hd, b: tl }; }
-
-
-var _List_cons = F2(_List_Cons);
-
-function _List_fromArray(arr)
-{
-	var out = _List_Nil;
-	for (var i = arr.length; i--; )
-	{
-		out = _List_Cons(arr[i], out);
-	}
-	return out;
-}
-
-function _List_toArray(xs)
-{
-	for (var out = []; xs.b; xs = xs.b) // WHILE_CONS
-	{
-		out.push(xs.a);
-	}
-	return out;
-}
-
-var _List_map2 = F3(function(f, xs, ys)
-{
-	for (var arr = []; xs.b && ys.b; xs = xs.b, ys = ys.b) // WHILE_CONSES
-	{
-		arr.push(A2(f, xs.a, ys.a));
-	}
-	return _List_fromArray(arr);
-});
-
-var _List_map3 = F4(function(f, xs, ys, zs)
-{
-	for (var arr = []; xs.b && ys.b && zs.b; xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
-	{
-		arr.push(A3(f, xs.a, ys.a, zs.a));
-	}
-	return _List_fromArray(arr);
-});
-
-var _List_map4 = F5(function(f, ws, xs, ys, zs)
-{
-	for (var arr = []; ws.b && xs.b && ys.b && zs.b; ws = ws.b, xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
-	{
-		arr.push(A4(f, ws.a, xs.a, ys.a, zs.a));
-	}
-	return _List_fromArray(arr);
-});
-
-var _List_map5 = F6(function(f, vs, ws, xs, ys, zs)
-{
-	for (var arr = []; vs.b && ws.b && xs.b && ys.b && zs.b; vs = vs.b, ws = ws.b, xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
-	{
-		arr.push(A5(f, vs.a, ws.a, xs.a, ys.a, zs.a));
-	}
-	return _List_fromArray(arr);
-});
-
-var _List_sortBy = F2(function(f, xs)
-{
-	return _List_fromArray(_List_toArray(xs).sort(function(a, b) {
-		return _Utils_cmp(f(a), f(b));
-	}));
-});
-
-var _List_sortWith = F2(function(f, xs)
-{
-	return _List_fromArray(_List_toArray(xs).sort(function(a, b) {
-		var ord = A2(f, a, b);
-		return ord === $elm$core$Basics$EQ ? 0 : ord === $elm$core$Basics$LT ? -1 : 1;
-	}));
-});
 
 
 
@@ -3928,31 +3928,10 @@ function _VirtualDom_dekey(keyedNode)
 		b: keyedNode.b
 	};
 }
+var $elm$core$Basics$EQ = {$: 'EQ'};
+var $elm$core$Basics$GT = {$: 'GT'};
+var $elm$core$Basics$LT = {$: 'LT'};
 var $elm$core$List$cons = _List_cons;
-var $elm$core$Elm$JsArray$foldr = _JsArray_foldr;
-var $elm$core$Array$foldr = F3(
-	function (func, baseCase, _v0) {
-		var tree = _v0.c;
-		var tail = _v0.d;
-		var helper = F2(
-			function (node, acc) {
-				if (node.$ === 'SubTree') {
-					var subTree = node.a;
-					return A3($elm$core$Elm$JsArray$foldr, helper, acc, subTree);
-				} else {
-					var values = node.a;
-					return A3($elm$core$Elm$JsArray$foldr, func, acc, values);
-				}
-			});
-		return A3(
-			$elm$core$Elm$JsArray$foldr,
-			helper,
-			A3($elm$core$Elm$JsArray$foldr, func, baseCase, tail),
-			tree);
-	});
-var $elm$core$Array$toList = function (array) {
-	return A3($elm$core$Array$foldr, $elm$core$List$cons, _List_Nil, array);
-};
 var $elm$core$Dict$foldr = F3(
 	function (func, acc, t) {
 		foldr:
@@ -4005,9 +3984,30 @@ var $elm$core$Set$toList = function (_v0) {
 	var dict = _v0.a;
 	return $elm$core$Dict$keys(dict);
 };
-var $elm$core$Basics$EQ = {$: 'EQ'};
-var $elm$core$Basics$GT = {$: 'GT'};
-var $elm$core$Basics$LT = {$: 'LT'};
+var $elm$core$Elm$JsArray$foldr = _JsArray_foldr;
+var $elm$core$Array$foldr = F3(
+	function (func, baseCase, _v0) {
+		var tree = _v0.c;
+		var tail = _v0.d;
+		var helper = F2(
+			function (node, acc) {
+				if (node.$ === 'SubTree') {
+					var subTree = node.a;
+					return A3($elm$core$Elm$JsArray$foldr, helper, acc, subTree);
+				} else {
+					var values = node.a;
+					return A3($elm$core$Elm$JsArray$foldr, func, acc, values);
+				}
+			});
+		return A3(
+			$elm$core$Elm$JsArray$foldr,
+			helper,
+			A3($elm$core$Elm$JsArray$foldr, func, baseCase, tail),
+			tree);
+	});
+var $elm$core$Array$toList = function (array) {
+	return A3($elm$core$Array$foldr, $elm$core$List$cons, _List_Nil, array);
+};
 var $elm$core$Result$Err = function (a) {
 	return {$: 'Err', a: a};
 };
@@ -4418,75 +4418,6 @@ var $elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
 			return 3;
 	}
 };
-var $elm$core$Dict$RBEmpty_elm_builtin = {$: 'RBEmpty_elm_builtin'};
-var $elm$core$Dict$empty = $elm$core$Dict$RBEmpty_elm_builtin;
-var $author$project$Twelve$input = 'CV-mk gm-IK sk-gm ca-sk sx-mk gm-start sx-ca kt-sk ca-VS kt-ml kt-ca mk-IK end-sx end-sk gy-sx end-ca ca-ml gm-CV sx-kt start-CV IK-start CV-kt ml-mk ml-CV ml-gm ml-IK';
-var $elm$core$Debug$log = _Debug_log;
-var $elm$core$Dict$RBNode_elm_builtin = F5(
-	function (a, b, c, d, e) {
-		return {$: 'RBNode_elm_builtin', a: a, b: b, c: c, d: d, e: e};
-	});
-var $elm$core$Dict$map = F2(
-	function (func, dict) {
-		if (dict.$ === 'RBEmpty_elm_builtin') {
-			return $elm$core$Dict$RBEmpty_elm_builtin;
-		} else {
-			var color = dict.a;
-			var key = dict.b;
-			var value = dict.c;
-			var left = dict.d;
-			var right = dict.e;
-			return A5(
-				$elm$core$Dict$RBNode_elm_builtin,
-				color,
-				key,
-				A2(func, key, value),
-				A2($elm$core$Dict$map, func, left),
-				A2($elm$core$Dict$map, func, right));
-		}
-	});
-var $elm$core$Basics$compare = _Utils_compare;
-var $elm$core$Dict$get = F2(
-	function (targetKey, dict) {
-		get:
-		while (true) {
-			if (dict.$ === 'RBEmpty_elm_builtin') {
-				return $elm$core$Maybe$Nothing;
-			} else {
-				var key = dict.b;
-				var value = dict.c;
-				var left = dict.d;
-				var right = dict.e;
-				var _v1 = A2($elm$core$Basics$compare, targetKey, key);
-				switch (_v1.$) {
-					case 'LT':
-						var $temp$targetKey = targetKey,
-							$temp$dict = left;
-						targetKey = $temp$targetKey;
-						dict = $temp$dict;
-						continue get;
-					case 'EQ':
-						return $elm$core$Maybe$Just(value);
-					default:
-						var $temp$targetKey = targetKey,
-							$temp$dict = right;
-						targetKey = $temp$targetKey;
-						dict = $temp$dict;
-						continue get;
-				}
-			}
-		}
-	});
-var $elm$core$Basics$neq = _Utils_notEqual;
-var $elm$core$String$toLower = _String_toLower;
-var $elm$core$String$toUpper = _String_toUpper;
-var $author$project$Twelve$isLowerCase = function (string) {
-	return _Utils_eq(
-		string,
-		$elm$core$String$toLower(string)) && (!_Utils_eq(
-		string,
-		$elm$core$String$toUpper(string)));
-};
 var $elm$core$List$any = F2(
 	function (isOkay, list) {
 		any:
@@ -4508,16 +4439,26 @@ var $elm$core$List$any = F2(
 			}
 		}
 	});
-var $elm$core$List$member = F2(
-	function (x, xs) {
-		return A2(
-			$elm$core$List$any,
-			function (a) {
-				return _Utils_eq(a, x);
-			},
-			xs);
+var $elm$core$List$head = function (list) {
+	if (list.b) {
+		var x = list.a;
+		var xs = list.b;
+		return $elm$core$Maybe$Just(x);
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return $elm$core$Maybe$Just(
+				f(value));
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
 	});
-var $elm$core$Basics$not = _Basics_not;
+var $elm$core$List$sortBy = _List_sortBy;
 var $elm$core$Maybe$withDefault = F2(
 	function (_default, maybe) {
 		if (maybe.$ === 'Just') {
@@ -4527,86 +4468,378 @@ var $elm$core$Maybe$withDefault = F2(
 			return _default;
 		}
 	});
-var $author$project$Twelve$search = F4(
-	function (current, visited, locations, allowTwoVisits) {
-		var pathCount = A3(
-			$elm$core$List$foldl,
-			F2(
-				function (l, count) {
-					return (l === 'end') ? (count + 1) : ((!$author$project$Twelve$isLowerCase(l)) ? (count + A4($author$project$Twelve$search, l, visited, locations, allowTwoVisits)) : ((l !== 'start') ? ((!A2($elm$core$List$member, l, visited)) ? (count + A4(
-						$author$project$Twelve$search,
-						l,
-						_Utils_ap(
-							visited,
-							_List_fromArray(
-								[l])),
-						locations,
-						allowTwoVisits)) : ((!allowTwoVisits) ? (count + A4(
-						$author$project$Twelve$search,
-						l,
-						_Utils_ap(
-							visited,
-							_List_fromArray(
-								[l])),
-						locations,
-						true)) : count)) : count));
-				}),
+var $author$project$Thirteen$findMaxCoord = F2(
+	function (searchFn, marks) {
+		return A2(
+			$elm$core$Maybe$withDefault,
 			0,
 			A2(
+				$elm$core$Maybe$map,
+				searchFn,
+				$elm$core$List$head(
+					$elm$core$List$reverse(
+						A2($elm$core$List$sortBy, searchFn, marks)))));
+	});
+var $author$project$Thirteen$input = '1118,85\n1064,690\n560,670\n68,446\n769,668\n88,219\n120,255\n925,879\n112,512\n1064,652\n1046,233\n902,417\n523,33\n1012,280\n1210,135\n410,142\n689,497\n698,211\n981,259\n465,610\n689,621\n1093,887\n114,728\n790,809\n139,59\n798,257\n390,457\n482,281\n701,190\n840,283\n320,723\n498,504\n256,397\n100,115\n401,92\n796,780\n239,729\n755,539\n736,870\n676,567\n484,560\n405,511\n187,387\n356,155\n42,659\n182,508\n256,374\n572,320\n738,207\n328,80\n70,528\n1111,752\n648,54\n33,308\n716,704\n701,798\n700,324\n10,260\n1076,401\n554,533\n592,885\n269,575\n492,528\n646,837\n1134,268\n1290,619\n442,248\n549,519\n908,647\n402,280\n1081,428\n768,575\n1277,525\n472,121\n985,635\n912,374\n512,499\n708,807\n1054,558\n305,856\n401,756\n8,53\n1044,256\n607,581\n156,840\n756,331\n771,609\n276,456\n1268,842\n1123,387\n155,526\n1125,380\n612,52\n864,772\n572,126\n1084,597\n666,397\n574,169\n33,481\n1098,280\n468,215\n370,3\n639,204\n1230,466\n512,684\n705,161\n738,126\n355,376\n1096,736\n1166,476\n1036,135\n912,782\n947,32\n636,50\n623,250\n1257,215\n416,672\n989,74\n1300,852\n776,659\n1196,838\n1064,304\n252,471\n994,410\n459,33\n567,361\n489,159\n1240,528\n58,506\n944,339\n788,0\n319,857\n644,215\n787,33\n1198,767\n798,843\n920,233\n760,411\n1300,626\n52,311\n812,558\n378,227\n226,437\n386,444\n169,291\n308,172\n698,618\n514,231\n761,235\n157,774\n798,684\n902,29\n428,37\n698,52\n405,383\n1104,256\n1058,784\n299,518\n617,332\n346,498\n1178,89\n1290,275\n1196,166\n293,425\n895,567\n1034,662\n596,56\n687,250\n534,255\n623,698\n1309,719\n92,347\n226,297\n736,253\n497,155\n736,528\n776,780\n223,42\n465,732\n900,53\n493,411\n909,838\n542,512\n385,659\n537,590\n1228,80\n420,462\n761,519\n879,852\n1277,693\n908,838\n890,324\n1092,383\n691,862\n602,378\n416,224\n296,598\n666,215\n234,347\n902,142\n1101,253\n581,362\n316,567\n28,255\n929,824\n117,77\n848,515\n701,704\n1136,233\n485,680\n1233,511\n788,357\n246,304\n500,505\n1144,63\n738,320\n964,620\n623,413\n26,495\n58,390\n82,590\n930,311\n239,578\n748,784\n873,518\n385,879\n311,242\n1036,666\n1230,641\n1032,224\n80,325\n1233,383\n1290,171\n31,413\n1076,493\n402,838\n731,690\n977,522\n92,36\n144,476\n520,365\n428,396\n1196,390\n100,149\n818,752\n142,637\n21,882\n295,61\n631,435\n731,204\n676,584\n68,448\n748,544\n560,224\n1,719\n683,152\n490,590\n909,373\n517,568\n967,690\n1015,450\n1092,175\n729,532\n676,248\n912,858\n1180,0\n174,233\n73,586\n403,292\n325,635\n308,474\n733,511\n38,787\n278,222\n562,36\n485,603\n296,822\n428,149\n433,494\n1240,120\n136,175\n1240,366\n1240,774\n485,214\n73,745\n668,364\n1071,119\n185,514\n882,268\n544,614\n540,838\n139,773\n1005,236\n156,280\n1290,584\n813,155\n209,826\n773,572\n715,852\n11,700\n562,350\n209,701\n293,33\n117,301\n1248,710\n343,690\n274,359\n1146,646\n930,666\n189,162\n161,383\n485,291\n912,558\n252,784\n1237,745\n35,32\n105,235\n760,483\n62,821\n977,372\n366,591\n221,848\n120,108\n991,857\n909,381\n355,518\n316,791\n445,583\n422,710\n510,508\n52,516\n349,236\n277,201\n276,662\n676,758\n502,455\n353,844\n415,316\n28,404\n498,558\n554,107\n1101,701\n935,873\n865,701\n1071,327\n497,409\n756,626\n1272,555\n1118,851\n1073,280\n385,463\n954,827\n1048,845\n402,59\n602,807\n577,511\n234,509\n642,880\n97,428\n705,226\n73,532\n1179,33\n74,87\n226,361\n256,484\n1154,280\n989,887\n982,696\n977,74\n566,51\n480,45\n398,72\n142,283\n848,851\n957,844\n390,233\n999,242\n366,339\n776,255\n1096,830\n845,162\n403,826\n1078,264\n274,666\n622,506\n70,366\n64,49\n579,690\n373,490\n738,350\n667,362\n134,591\n1064,808\n438,212\n53,215\n226,533\n359,416\n989,603\n1262,357\n1096,64\n701,544\n890,570\n358,296\n821,175\n851,33\n356,826\n1094,212\n1213,428\n596,390\n1066,814\n80,466\n273,824\n35,862\n877,235\n484,616\n103,42\n1181,810\n385,435\n768,736\n1289,539\n1173,568\n760,847\n826,726\n808,631\n714,388\n274,135\n900,752\n808,263\n810,57\n468,887\n38,824\n907,826\n1277,586\n33,362\n497,215\n912,820\n1054,397\n512,658\n64,497\n410,814\n689,301\n756,533\n1029,311\n470,891\n525,84\n1002,474\n540,248\n664,501\n912,72\n70,8\n353,162\n1155,368\n156,558\n808,487\n156,54\n1300,260\n192,67\n33,273\n338,266\n909,92\n117,814\n1158,36\n356,778\n1258,516\n1066,798\n957,162\n1228,768\n361,469\n157,215\n810,505\n687,413\n335,37\n1058,23\n920,498\n714,623\n1282,137\n1202,413\n1076,122\n251,327\n310,469\n1190,108\n687,385\n621,593\n403,567\n623,196\n882,793\n1228,590\n408,477\n296,72\n114,248\n808,256\n469,828\n825,456\n718,9\n1071,165\n301,550\n1169,882\n1041,459\n944,303\n560,710\n522,357\n338,215\n537,145\n687,698\n972,215\n328,814\n1265,404\n321,74\n909,597\n1242,448\n33,525\n120,786\n684,379\n164,248\n537,817\n1158,401\n329,259\n349,210\n1190,3\n550,847\n649,522\n276,214\n933,609\n1248,73\n542,158\n842,332\n842,108\n726,366\n1054,334\n1168,645\n252,871\n681,792\n602,29\n1141,291\n912,385\n462,379\n1174,495\n633,38\n20,310\n1193,814\n169,774\n643,252\n554,779\n1002,722\n1258,67\n298,378\n1054,547\n502,858\n1126,89\n333,74\n1014,520\n1081,690\n45,796\n1081,466\n146,469\n909,166\n902,752\n1250,32\n663,409\n131,861\n840,197\n174,45\n152,858\n186,679\n74,59\n164,590\n622,394\n964,396\n141,882\n1153,663\n584,8\n909,728\n321,7\n1222,135\n277,693\n252,423\n890,509\n162,287\n1071,266\n110,627\n305,38\n1275,862\n298,166\n838,569\n1054,484\n493,595\n110,491\n381,455\n572,687\n70,120\n773,817\n229,204\n566,135\n18,50\n114,390\n565,26\n902,466\n1135,674\n308,26\n1210,485\n502,493\n944,555\n256,560\n1153,774\n865,68\n28,137\n184,197\n962,809\n894,222\n634,567\n622,58\n808,183\n539,285\n1277,397\n522,537\n112,158\n1136,661\n114,646\n1200,280\n1263,89\n356,827\n87,640\n462,809\n21,539\n52,378\n771,285\n293,273\n246,735\n564,772\n714,390\n565,868\n401,597\n1034,438\n621,621\n1154,838\n92,99\n1300,186\n1237,532\n321,603\n664,837\n445,193\n1092,831\n234,401\n100,745\n1258,378\n1198,127\n550,411\n1034,456\n112,127\n11,194\n730,535\n872,614\n977,455\n1174,719\n937,190\n950,836\n237,280\n661,344\n246,204\n1193,301\n165,383\n164,764\n1009,102\n994,268\n373,190\n1174,175\n62,73\n907,567\n356,728\n120,3\n1252,56\n209,641\n113,226\n821,595\n738,277\n1176,533\n1009,498\n687,196\n1278,52\n1179,861\n502,519\n1076,547\n1169,12\n882,37\n244,814\n661,550\n925,659\n1171,59\n339,362\n1076,285\n1084,533\n1210,745\n808,519\n764,749\n689,273\n1092,511\n514,332\n398,173\n1014,72\n401,138\n1190,255\n1250,862\n622,388\n687,478\n333,372\n370,190\n694,385\n1124,556\n1056,749\n649,792\n154,729\n301,844\n329,635\n58,838\n940,190\n281,641\n515,387\n813,215\n841,262\n617,556\n1230,204\n930,379\n1012,291\n1218,795\n428,268\n21,486\n185,380\n1029,583\n315,586\n281,583\n100,268\n1088,859\n971,308\n88,395\n597,207\n621,273\n10,186\n370,704\n714,504\n427,770\n256,385\n1218,544\n485,829\n59,318\n744,135\n160,607\n972,716\n440,736\n291,862\n20,584\n840,891\n294,500\n920,457\n776,639\n679,435\n276,227\n1123,835\n216,491\n410,53\n646,841\n513,12\n32,282\n643,700\n1158,455\n1171,773\n216,212\n0,287\n146,425\n380,807\n1138,57\n932,227\n555,539\n21,42\n346,396\n688,282\n385,431\n398,273\n428,857\n132,313\n540,646\n52,827\n161,859\n1037,439\n641,446\n574,477\n281,311\n1198,158\n1200,715\n70,558\n139,387\n932,848\n744,311\n1002,172\n964,26\n169,120\n301,498\n642,364\n580,731\n909,354\n217,7\n1041,575\n1289,38\n1022,833\n1279,481\n1154,558\n1196,504\n104,607\n415,809\n1275,32\n398,334\n756,50\n182,773\n208,772\n1154,728\n1158,858\n730,59\n62,184\n957,344\n890,547\n1176,591\n73,362\n515,507\n1145,511\n1277,621\n62,9\n1277,413\n361,873\n786,0\n483,857\n534,780\n1252,838\n796,332\n1083,803\n662,840\n682,399\n798,499\n925,459\n1228,687\n895,316\n541,276\n208,324\n523,705\n907,292\n468,332\n1289,355\n667,700\n402,647\n416,387\n1054,560\n31,481\n920,396\n234,45\n\nfold along x=655\nfold along y=447\nfold along x=327\nfold along y=223\nfold along x=163\nfold along y=111\nfold along x=81\nfold along y=55\nfold along x=40\nfold along y=27\nfold along y=13\nfold along y=6';
+var $elm$core$Debug$log = _Debug_log;
+var $elm$core$List$foldrHelper = F4(
+	function (fn, acc, ctr, ls) {
+		if (!ls.b) {
+			return acc;
+		} else {
+			var a = ls.a;
+			var r1 = ls.b;
+			if (!r1.b) {
+				return A2(fn, a, acc);
+			} else {
+				var b = r1.a;
+				var r2 = r1.b;
+				if (!r2.b) {
+					return A2(
+						fn,
+						a,
+						A2(fn, b, acc));
+				} else {
+					var c = r2.a;
+					var r3 = r2.b;
+					if (!r3.b) {
+						return A2(
+							fn,
+							a,
+							A2(
+								fn,
+								b,
+								A2(fn, c, acc)));
+					} else {
+						var d = r3.a;
+						var r4 = r3.b;
+						var res = (ctr > 500) ? A3(
+							$elm$core$List$foldl,
+							fn,
+							acc,
+							$elm$core$List$reverse(r4)) : A4($elm$core$List$foldrHelper, fn, acc, ctr + 1, r4);
+						return A2(
+							fn,
+							a,
+							A2(
+								fn,
+								b,
+								A2(
+									fn,
+									c,
+									A2(fn, d, res))));
+					}
+				}
+			}
+		}
+	});
+var $elm$core$List$foldr = F3(
+	function (fn, acc, ls) {
+		return A4($elm$core$List$foldrHelper, fn, acc, 0, ls);
+	});
+var $elm$core$List$map = F2(
+	function (f, xs) {
+		return A3(
+			$elm$core$List$foldr,
+			F2(
+				function (x, acc) {
+					return A2(
+						$elm$core$List$cons,
+						f(x),
+						acc);
+				}),
+			_List_Nil,
+			xs);
+	});
+var $elm$core$Basics$composeR = F3(
+	function (f, g, x) {
+		return g(
+			f(x));
+	});
+var $elm$core$Basics$negate = function (n) {
+	return -n;
+};
+var $elm$core$String$toInt = _String_toInt;
+var $author$project$Thirteen$convertToMark = function (xyString) {
+	return function (coords) {
+		if ((coords.b && coords.b.b) && (!coords.b.b.b)) {
+			var x = coords.a;
+			var _v1 = coords.b;
+			var y = _v1.a;
+			return $elm$core$Maybe$Just(
+				{x: x, y: y});
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	}(
+		A2(
+			$elm$core$List$map,
+			A2(
+				$elm$core$Basics$composeR,
+				$elm$core$String$toInt,
+				$elm$core$Maybe$withDefault(-1)),
+			A2($elm$core$String$split, ',', xyString)));
+};
+var $elm$core$List$maybeCons = F3(
+	function (f, mx, xs) {
+		var _v0 = f(mx);
+		if (_v0.$ === 'Just') {
+			var x = _v0.a;
+			return A2($elm$core$List$cons, x, xs);
+		} else {
+			return xs;
+		}
+	});
+var $elm$core$List$filterMap = F2(
+	function (f, xs) {
+		return A3(
+			$elm$core$List$foldr,
+			$elm$core$List$maybeCons(f),
+			_List_Nil,
+			xs);
+	});
+var $elm$core$String$lines = _String_lines;
+var $author$project$Thirteen$Horizontal = function (a) {
+	return {$: 'Horizontal', a: a};
+};
+var $author$project$Thirteen$Vertical = function (a) {
+	return {$: 'Vertical', a: a};
+};
+var $elm$core$String$replace = F3(
+	function (before, after, string) {
+		return A2(
+			$elm$core$String$join,
+			after,
+			A2($elm$core$String$split, before, string));
+	});
+var $author$project$Thirteen$parseFold = function (s) {
+	return function (parts) {
+		if ((parts.b && parts.b.b) && (!parts.b.b.b)) {
+			var axis = parts.a;
+			var _v1 = parts.b;
+			var index = _v1.a;
+			var i = A2(
 				$elm$core$Maybe$withDefault,
-				_List_Nil,
-				A2($elm$core$Dict$get, current, locations)));
-		return pathCount;
+				-1,
+				$elm$core$String$toInt(index));
+			switch (axis) {
+				case 'x':
+					return $elm$core$Maybe$Just(
+						$author$project$Thirteen$Horizontal(i));
+				case 'y':
+					return $elm$core$Maybe$Just(
+						$author$project$Thirteen$Vertical(i));
+				default:
+					return $elm$core$Maybe$Nothing;
+			}
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	}(
+		A2(
+			$elm$core$String$split,
+			'=',
+			A3($elm$core$String$replace, 'fold along ', '', s)));
+};
+var $author$project$Thirteen$parseManual = function (manual) {
+	var _v0 = A2($elm$core$String$split, '\n\n', manual);
+	if ((_v0.b && _v0.b.b) && (!_v0.b.b.b)) {
+		var points = _v0.a;
+		var _v1 = _v0.b;
+		var folds = _v1.a;
+		var ps = A2(
+			$elm$core$List$filterMap,
+			$author$project$Thirteen$convertToMark,
+			$elm$core$String$lines(points));
+		var fs = A2(
+			$elm$core$List$filterMap,
+			$author$project$Thirteen$parseFold,
+			$elm$core$String$lines(folds));
+		return {folds: fs, points: ps};
+	} else {
+		return {folds: _List_Nil, points: _List_Nil};
+	}
+};
+var $elm$core$List$append = F2(
+	function (xs, ys) {
+		if (!ys.b) {
+			return xs;
+		} else {
+			return A3($elm$core$List$foldr, $elm$core$List$cons, ys, xs);
+		}
+	});
+var $elm$core$List$filter = F2(
+	function (isGood, list) {
+		return A3(
+			$elm$core$List$foldr,
+			F2(
+				function (x, xs) {
+					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
+				}),
+			_List_Nil,
+			list);
+	});
+var $elm$core$Tuple$mapSecond = F2(
+	function (func, _v0) {
+		var x = _v0.a;
+		var y = _v0.b;
+		return _Utils_Tuple2(
+			x,
+			func(y));
+	});
+var $elm$core$Basics$neq = _Utils_notEqual;
+var $elm$core$List$partition = F2(
+	function (pred, list) {
+		var step = F2(
+			function (x, _v0) {
+				var trues = _v0.a;
+				var falses = _v0.b;
+				return pred(x) ? _Utils_Tuple2(
+					A2($elm$core$List$cons, x, trues),
+					falses) : _Utils_Tuple2(
+					trues,
+					A2($elm$core$List$cons, x, falses));
+			});
+		return A3(
+			$elm$core$List$foldr,
+			step,
+			_Utils_Tuple2(_List_Nil, _List_Nil),
+			list);
+	});
+var $author$project$Thirteen$performFold = F2(
+	function (fold, points) {
+		var _v0 = function () {
+			if (fold.$ === 'Horizontal') {
+				var i = fold.a;
+				return {
+					getter: function ($) {
+						return $.x;
+					},
+					index: i,
+					setter: function (m) {
+						return _Utils_update(
+							m,
+							{x: (i * 2) - m.x});
+					}
+				};
+			} else {
+				var i = fold.a;
+				return {
+					getter: function ($) {
+						return $.y;
+					},
+					index: i,
+					setter: function (m) {
+						return _Utils_update(
+							m,
+							{y: (i * 2) - m.y});
+					}
+				};
+			}
+		}();
+		var getter = _v0.getter;
+		var setter = _v0.setter;
+		var index = _v0.index;
+		return function (_v2) {
+			var secondaries = _v2.a;
+			var primaries = _v2.b;
+			return A2(
+				$elm$core$List$append,
+				primaries,
+				A2(
+					$elm$core$List$filterMap,
+					function (sm) {
+						var _v3 = A2(
+							$elm$core$List$any,
+							function (pm) {
+								return _Utils_eq(pm.x, (index * 2) - sm.x) && _Utils_eq(pm.y, sm.y);
+							},
+							primaries);
+						if (_v3) {
+							return $elm$core$Maybe$Nothing;
+						} else {
+							return $elm$core$Maybe$Just(
+								setter(sm));
+						}
+					},
+					secondaries));
+		}(
+			A2(
+				$elm$core$Tuple$mapSecond,
+				$elm$core$List$filter(
+					A2(
+						$elm$core$Basics$composeR,
+						getter,
+						$elm$core$Basics$neq(index))),
+				A2(
+					$elm$core$List$partition,
+					A2(
+						$elm$core$Basics$composeR,
+						getter,
+						$elm$core$Basics$gt(index)),
+					points)));
 	});
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
-var $elm$core$String$words = _String_words;
-var $author$project$Twelve$main = function () {
-	var locations = A2(
+var $author$project$Thirteen$main = function () {
+	var manual = A2(
 		$elm$core$Debug$log,
-		'locations',
-		A3(
-			$elm$core$List$foldl,
-			F2(
-				function (con, locs) {
-					var _v0 = A2($elm$core$String$split, '-', con);
-					if ((_v0.b && _v0.b.b) && (!_v0.b.b.b)) {
-						var src = _v0.a;
-						var _v1 = _v0.b;
-						var dest = _v1.a;
-						var dict = A2(
-							$elm$core$Dict$map,
-							F2(
-								function (key, value) {
-									return _Utils_eq(key, src) ? _Utils_ap(
-										value,
-										_List_fromArray(
-											[dest])) : (_Utils_eq(key, dest) ? _Utils_ap(
-										value,
-										_List_fromArray(
-											[src])) : value);
-								}),
-							locs);
-						return dict;
-					} else {
-						return locs;
-					}
-				}),
-			$elm$core$Dict$empty,
-			$elm$core$String$words($author$project$Twelve$input)));
+		'manual',
+		$author$project$Thirteen$parseManual($author$project$Thirteen$input));
+	var foldedPaper = A3($elm$core$List$foldl, $author$project$Thirteen$performFold, manual.points, manual.folds);
 	var partOne = A2(
 		$elm$core$Debug$log,
 		'partOne',
-		A4($author$project$Twelve$search, 'start', _List_Nil, locations, true));
+		$elm$core$List$length(foldedPaper));
 	var partTwo = A2(
-		$elm$core$Debug$log,
-		'partTwo',
-		A4($author$project$Twelve$search, 'start', _List_Nil, locations, false));
+		$elm$core$List$map,
+		function (y) {
+			return A2(
+				$elm$core$Debug$log,
+				'',
+				A2(
+					$elm$core$String$join,
+					'',
+					A2(
+						$elm$core$List$map,
+						function (x) {
+							var _v0 = A2(
+								$elm$core$List$any,
+								function (m) {
+									return _Utils_eq(m.x, x) && _Utils_eq(m.y, y);
+								},
+								foldedPaper);
+							if (_v0) {
+								return ' 0 ';
+							} else {
+								return '   ';
+							}
+						},
+						A2(
+							$elm$core$List$range,
+							0,
+							A2(
+								$author$project$Thirteen$findMaxCoord,
+								function ($) {
+									return $.x;
+								},
+								foldedPaper)))));
+		},
+		$elm$core$List$reverse(
+			A2(
+				$elm$core$List$range,
+				0,
+				A2(
+					$author$project$Thirteen$findMaxCoord,
+					function ($) {
+						return $.y;
+					},
+					foldedPaper))));
 	return $elm$html$Html$text('See console for results');
 }();
-_Platform_export({'Twelve':{'init':_VirtualDom_init($author$project$Twelve$main)(0)(0)}});}(this));
+_Platform_export({'Thirteen':{'init':_VirtualDom_init($author$project$Thirteen$main)(0)(0)}});}(this));
 
-  var app = Elm.Twelve.init({ node: document.getElementById("elm") });
+  var app = Elm.Thirteen.init({ node: document.getElementById("elm") });
 }
 catch (e)
 {
